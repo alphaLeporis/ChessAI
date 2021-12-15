@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 import os
 
-from project.chess_utilities.example_utility import ExampleUtility
+from project.chess_utilities.board_score_utility import ExampleUtility
 from project.chess_agents.example_agent import ExampleAgent
+from project.chess_agents.ABPruningAgent import ABPruningAgent
 import chess
 import chess.engine
 import chess.pgn
@@ -16,7 +17,7 @@ def play_stockfish():
     # Setup
     board = chess.Board()
     # Define agent here
-    white_player = ExampleAgent(ExampleUtility(), 5.0)
+    white_player = ABPruningAgent(ExampleUtility(), 5.0)
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:
