@@ -21,6 +21,7 @@ class ExampleAgent(Agent):
         
         # If the agent is playing as black, the utility values are flipped (negative-positive)
         flip_value = 1 if board.turn == chess.WHITE else -1
+        print("Current:"+str(board.move_stack))
         
         best_move = random.sample(list(board.legal_moves), 1)[0]
         best_utility = 0
