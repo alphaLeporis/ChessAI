@@ -1,1 +1,1 @@
-python -m project.chess_engines.example_engine 
+.\venv\Scripts\activate.bat & python -m project.chess_engines.example_engine 
