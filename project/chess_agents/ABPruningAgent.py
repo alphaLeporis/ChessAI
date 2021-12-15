@@ -1,3 +1,4 @@
+import random
 from project.chess_agents.agent import Agent
 import math
 import chess
@@ -23,10 +24,12 @@ class ABPruningAgent(Agent):
 
     def max_value(self, board, alpha, beta, depth):
         if depth <= 0:
-            print(self.flip_value*self.utility.board_value(board))
+            #print(self.flip_value*self.utility.board_value(board))
             return self.flip_value*self.utility.board_value(board)
         v = -INF
-        for move in list(board.legal_moves):
+        movelist = list(board.legal_moves)
+        random.shuffle(movelist)
+        for move in movelist:
             board.push(move)
             v = max(v, self.min_value(board, alpha, beta, depth - 1))
             board.pop()
@@ -37,10 +40,12 @@ class ABPruningAgent(Agent):
 
     def min_value(self, board, alpha, beta, depth):
         if depth <= 0:
-            print(self.flip_value*self.utility.board_value(board))
+            #print(self.flip_value*self.utility.board_value(board))
             return self.flip_value*self.utility.board_value(board)
         v = INF
-        for move in list(board.legal_moves):
+        movelist = list(board.legal_moves)
+        random.shuffle(movelist)
+        for move in movelist:
             board.push(move)
             v = min(v, self.max_value(board, alpha, beta, depth - 1))
             board.pop()
