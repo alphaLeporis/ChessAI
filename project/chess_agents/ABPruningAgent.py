@@ -2,9 +2,19 @@ import random
 from project.chess_agents.agent import Agent
 import math
 import chess
+
+from project.chess_utilities.utility import Utility
+
 INF = math.inf
 
 class ABPruningAgent(Agent):
+
+    # Initialize your agent with whatever parameters you want
+    def __init__(self, utility: Utility, time_limit_move: float) -> None:
+        super().__init__(utility, time_limit_move)
+        self.name = "ABPruningAGent"
+        self.author = "Niels, Louis, Alexander"
+
     def calculate_move(self, board):
         self.flip_value = 1 if board.turn == chess.WHITE else -1
 
@@ -13,7 +23,10 @@ class ABPruningAgent(Agent):
         best_score = -INF
         beta = INF
         best_action = None
+        if(len(list(board.legal_moves)) == 0):
+            list2 = list(board.legal_moves)
         for move in list(board.legal_moves):
+
             board.push(move)
             v = self.min_value(board, best_score, beta, depth - 1)
             board.pop()
