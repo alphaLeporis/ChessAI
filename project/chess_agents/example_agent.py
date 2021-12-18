@@ -1,8 +1,21 @@
 from project.chess_agents.agent import Agent
 import chess
+import chess.svg
+from collections import OrderedDict
+from operator import itemgetter
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+
+from project.chess_agents.choose_opening import choose_opening
 from project.chess_utilities.utility import Utility
 import time
 import random
+
+path_to_model = '../../chess-engine-model/latest-model'
+
+global model
+model = tf.saved_model.load(path_to_model)
 
 """An example search agent with two implemented methods to determine the next move"""
 class ExampleAgent(Agent):
@@ -12,6 +25,7 @@ class ExampleAgent(Agent):
         super().__init__(utility, time_limit_move)
         self.name = "Example search agent"
         self.author = "J. Duym & A. Troch"
+        self.opening = choose_opening()
         
 
     # This agent does not perform any searching, it sinmply iterates trough all the moves possible and picks the one with the highest utility
@@ -22,7 +36,13 @@ class ExampleAgent(Agent):
         # If the agent is playing as black, the utility values are flipped (negative-positive)
         flip_value = 1 if board.turn == chess.WHITE else -1
         print("Current:"+str(board.move_stack))
-        
+
+        if (len(board.move_stack) == 0):
+            print(flip_value)
+            self.opening.init(flip_value)
+        else:
+            self.opening.iterate(board)
+
         best_move = random.sample(list(board.legal_moves), 1)[0]
         best_utility = 0
         # Loop trough all legal moves
