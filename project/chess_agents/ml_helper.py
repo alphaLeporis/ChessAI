@@ -90,8 +90,10 @@ def get_possible_moves_data(current_board):
 
     for column in move_from_feature_names:
         df[column] = df[column].astype(float)
+
     for column in move_to_feature_names:
         df[column] = df[column].astype(float)
+
     return df
 
 

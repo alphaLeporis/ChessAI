@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 import os
 
-from project.chess_agents.ml_agent import MLAgent
-from project.chess_utilities.example_utility import ExampleUtility
-from project.chess_agents.example_agent import ExampleAgent
+from project.chess_agents.negamax_agent import NegamaxAgent
 import chess
 import chess.engine
 import chess.pgn
 from dotenv import load_dotenv
+
+from project.chess_utilities.negamax_utility import NegaMaxUtility
 
 """ An agent plays a game against the stockfish engine """
 def play_stockfish():
@@ -17,7 +17,7 @@ def play_stockfish():
     # Setup
     board = chess.Board()
     # Define agent here
-    white_player = MLAgent(ExampleUtility(), 5.0)
+    white_player = NegamaxAgent(NegaMaxUtility(), 5.0)
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:
