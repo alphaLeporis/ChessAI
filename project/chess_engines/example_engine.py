@@ -12,6 +12,6 @@ if __name__ == "__main__":
     # Create your agent
     agent = ABPruningAgent(utility, 5.0)
     # Create the engine
-    engine = UciEngine("Example engine", "Arne", agent)
+    engine = UciEngine("Example engine", "Niels, Louis, Alexander", agent)
     # Run the engine (will loop until the game is done or exited)
     engine.engine_operation()

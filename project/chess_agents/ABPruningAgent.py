@@ -5,7 +5,6 @@ import chess
 
 from project.chess_utilities.utility import Utility
 
-INF = math.inf
 
 class ABPruningAgent(Agent):
 
@@ -20,13 +19,11 @@ class ABPruningAgent(Agent):
 
         # minimax search with alpha-beta cut
         depth = 5
+        INF = float('inf')
         best_score = -INF
         beta = INF
         best_action = None
-        if(len(list(board.legal_moves)) == 0):
-            list2 = list(board.legal_moves)
         for move in list(board.legal_moves):
-
             board.push(move)
             v = self.min_value(board, best_score, beta, depth - 1)
             board.pop()
@@ -37,11 +34,12 @@ class ABPruningAgent(Agent):
 
     def max_value(self, board, alpha, beta, depth):
         if depth <= 0:
-            #print(self.flip_value*self.utility.board_value(board))
+            print(self.flip_value*self.utility.board_value(board))
             return self.flip_value*self.utility.board_value(board)
+        INF = float('inf')
         v = -INF
         movelist = list(board.legal_moves)
-        random.shuffle(movelist)
+        random.shuffle(movelist) #shuffle successor states in order to improve performance
         for move in movelist:
             board.push(move)
             v = max(v, self.min_value(board, alpha, beta, depth - 1))
@@ -53,11 +51,12 @@ class ABPruningAgent(Agent):
 
     def min_value(self, board, alpha, beta, depth):
         if depth <= 0:
-            #print(self.flip_value*self.utility.board_value(board))
+            print(self.flip_value*self.utility.board_value(board))
             return self.flip_value*self.utility.board_value(board)
+        INF = float('inf')
         v = INF
         movelist = list(board.legal_moves)
-        random.shuffle(movelist)
+        random.shuffle(movelist) #shuffle successor states in order to improve performance
         for move in movelist:
             board.push(move)
             v = min(v, self.max_value(board, alpha, beta, depth - 1))
