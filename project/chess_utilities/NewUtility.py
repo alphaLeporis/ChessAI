@@ -6,7 +6,7 @@ MATE_SCORE = 99999
 INF = float("inf")
 
 OPENING_BOOK = True # Use opening book?
-ENDGAME_BOOK = True # Use endgame book?
+ENDGAME_BOOK = False # Use endgame book?
 
 class NewUtility(Utility):
 
