@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import os
 
-from project.chess_agents.alphabeta_agent import alphabeta_agent
-from project.chess_utilities.example_utility import ExampleUtility
+from project.chess_agents.AlphaBetaPruningNullMoveQueiscence import AlphaBetaPruningNullMoveQueiscence
+from project.chess_utilities.NewUtility import NewUtility
 import chess
 import chess.engine
 import chess.pgn
@@ -16,7 +16,7 @@ def play_stockfish():
     # Setup
     board = chess.Board()
     # Define agent here
-    white_player = alphabeta_agent(ExampleUtility(), 5.0)
+    white_player = AlphaBetaPruningNullMoveQueiscence(NewUtility(), 5.0)
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:

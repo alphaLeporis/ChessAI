@@ -1,19 +1,60 @@
+import os
+
 import chess
 import chess.polyglot
 import chess.gaviota
+from project.chess_agents.agent import Agent
 from project.chess_utilities.utility import Utility
 from project.chess_utilities.NewUtility import NewUtility, board_value, eval_endgame, rate, get_num_pieces, MATE_SCORE
 # Options
 START_AS = "WHITE" # Human player plays as: WHITE, BLACK, or RANDOM
 DEPTH = 4 # Search depth, minimum 1
 OPENING_BOOK = True # Use opening book?
-ENDGAME_BOOK = True # Use endgame book?
+ENDGAME_BOOK = False # Use endgame book?
 
 # Constants
 INF = float("inf")
 
 # Other
 ttable = {} # Transposition table
+class AlphaBetaPruningNullMoveQueiscence(Agent):
+
+    # Initialize your agent with whatever parameters you want
+    def __init__(self, utility: Utility, time_limit_move: float) -> None:
+        super().__init__(utility, time_limit_move)
+        self.name = "The Best Agent"
+        self.author = "Niels, Louis, Alexander"
+
+    def calculate_move(self, board: chess.Board):
+        """
+        Chooses a move for the CPU
+        If inside opening book make book move
+        If inside Gaviota tablebase make tablebase move
+        Else search for a move
+        """
+        global OPENING_BOOK
+
+        if OPENING_BOOK:
+            try:
+                dir_path = os.path.dirname(os.path.realpath(__file__))
+                with chess.polyglot.open_reader(
+                        os.path.join(dir_path, "Opening_Book.bin")) as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
+                    opening = opening_book.choice(board)
+                    opening_book.close()
+                    return opening.move
+            except IndexError:
+                OPENING_BOOK = False
+
+        if ENDGAME_BOOK and get_num_pieces(board) <= 5:
+            evals = []
+            for move in list(board.legal_moves):
+                board.push(move)
+                score = eval_endgame(board)
+                board.pop()
+                evals.append((move, score))
+            return max(evals, key=lambda eval: eval[1])[0]
+
+        return iterative_deepening(board, DEPTH)[0]
 
 def negamax(board, depth, alpha, beta):
     """
@@ -129,36 +170,3 @@ def iterative_deepening(board, depth):
     for d in range(1, depth + 1):
         move, guess = MTDf(board, d, guess)
     return (move, guess)
-
-
-def cpu_move(board, depth):
-    """
-    Chooses a move for the CPU
-    If inside opening book make book move
-    If inside Gaviota tablebase make tablebase move
-    Else search for a move
-    """
-    global OPENING_BOOK
-
-    if OPENING_BOOK:
-        try:
-            with chess.polyglot.open_reader(
-                    "Opening Book/Book.bin") as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
-                opening = opening_book.choice(board)
-                opening_book.close()
-                return opening.move
-        except IndexError:
-            OPENING_BOOK = False
-
-    if ENDGAME_BOOK and get_num_pieces(board) <= 5:
-        evals = []
-        for move in list(board.legal_moves):
-            board.push(move)
-            score = eval_endgame(board)
-            board.pop()
-            evals.append((move, score))
-        return max(evals, key=lambda eval: eval[1])[0]
-
-    # return negamax(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-    # return MTDf(board, depth, 0)[0]
-    return iterative_deepening(board, depth)[0]
