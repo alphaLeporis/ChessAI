@@ -301,7 +301,7 @@ def psqt_eval(board):
     phase = get_phase(board)
     psqt_score = 0
     pieces_dict = board.piece_map()
-    for pos in pieces_dict:  # TODO could probably be optimized, at least with numpy to make the lists more efficient. Bitboards seem better though
+    for pos in pieces_dict:
         piece = pieces_dict[pos]
         if piece.color == board.turn:
             value = 1

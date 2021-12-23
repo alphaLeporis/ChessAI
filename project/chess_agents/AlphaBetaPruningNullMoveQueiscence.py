@@ -126,9 +126,9 @@ def iterative_deepening(board, depth):
 class AlphaBetaPruningNullMoveQueiscence(Agent):
 
     def __init__(self, utility: Utility, time_limit_move: float) -> None:
-        """Setup the Search Agent"""
-        self.utility = utility
-        self.time_limit_move = time_limit_move
+        super().__init__(utility, time_limit_move)
+        self.name = "Best Agent Ever"
+        self.author = "Alexander, Louis, Niels"
 
     def calculate_move(self, board: chess.Board):
         """
