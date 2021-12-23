@@ -3,59 +3,11 @@ import os
 import chess
 import chess.polyglot
 import chess.gaviota
+
 from project.chess_agents.agent import Agent
-from project.chess_utilities.utility import Utility
-from project.chess_utilities.NewUtility import NewUtility, board_value, eval_endgame, rate, get_num_pieces, MATE_SCORE
-# Options
-START_AS = "WHITE" # Human player plays as: WHITE, BLACK, or RANDOM
-DEPTH = 4 # Search depth, minimum 1
-OPENING_BOOK = True # Use opening book?
-ENDGAME_BOOK = False # Use endgame book?
+from project.chess_utilities.NewUtility import *
 
-# Constants
-INF = float("inf")
-
-# Other
-ttable = {} # Transposition table
-class AlphaBetaPruningNullMoveQueiscence(Agent):
-
-    # Initialize your agent with whatever parameters you want
-    def __init__(self, utility: Utility, time_limit_move: float) -> None:
-        super().__init__(utility, time_limit_move)
-        self.name = "The Best Agent"
-        self.author = "Niels, Louis, Alexander"
-
-    def calculate_move(self, board: chess.Board):
-        """
-        Chooses a move for the CPU
-        If inside opening book make book move
-        If inside Gaviota tablebase make tablebase move
-        Else search for a move
-        """
-        global OPENING_BOOK
-
-        if OPENING_BOOK:
-            try:
-                dir_path = os.path.dirname(os.path.realpath(__file__))
-                with chess.polyglot.open_reader(
-                        os.path.join(dir_path, "Opening_Book.bin")) as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
-                    opening = opening_book.choice(board)
-                    opening_book.close()
-                    return opening.move
-            except IndexError:
-                OPENING_BOOK = False
-
-        if ENDGAME_BOOK and get_num_pieces(board) <= 5:
-            evals = []
-            for move in list(board.legal_moves):
-                board.push(move)
-                score = eval_endgame(board)
-                board.pop()
-                evals.append((move, score))
-            return max(evals, key=lambda eval: eval[1])[0]
-
-        return iterative_deepening(board, DEPTH)[0]
-
+ttable = {}
 def negamax(board, depth, alpha, beta):
     """
     Searches the possible moves using negamax, alpha-beta pruning, null-move pruning, and a transposition table
@@ -72,44 +24,29 @@ def negamax(board, depth, alpha, beta):
     - aspiration search?
     - Quiescence Search (doesnt work)
     """
-    #Return board position as zobrist hash
     key = chess.polyglot.zobrist_hash(board)
+    tt_move = None
 
     # Search for position in the transposition table
     if key in ttable:
-        tt_move, tt_score, tt_type, tt_depth = ttable[key]
+        tt_move, tt_lowerbound, tt_upperbound, tt_depth = ttable[key]
         if tt_depth >= depth:
-            if tt_type == "EXACT":
-                return (tt_move, tt_score)
-
-            if tt_type == "LOWERBOUND" and tt_score > alpha:  # Update lowerbound alpha
-                alpha = tt_score
-            elif tt_type == "UPPERBOUND" and tt_score < beta:  # Update upperbound beta
-                beta = tt_score
-
-            if alpha >= beta:
-                return (tt_move, tt_score)
+            if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
+                return (tt_move, tt_upperbound)
+            if tt_lowerbound >= beta:
+                return (tt_move, tt_lowerbound)
 
     if depth == 0 or board.is_game_over():
-        score = board_value(board)
-
-        # Add position to the transposition table
-        if abs(alpha - beta) > 1:  # Stops null window searches from being stored
-            if score <= alpha:  # Score is lowerbound
-                ttable[key] = ("", score, "LOWERBOUND", depth)
-            elif score >= beta:  # Score is upperbound
-                ttable[key] = ("", score, "UPPERBOUND", depth)
-            else:  # Score is exact
-                ttable[key] = ("", score, "EXACT", depth)
-
-        return ("", score)
+        score = evaluate(board)
+        ttable[key] = (None, score, score, depth)  # Add position to the transposition table
+        return (None, score)
     else:
         # Alpha-beta negamax
         score = 0
-        best_move = ""
+        best_move = None
         best_score = -INF
         moves = list(board.legal_moves)
-        moves.sort(key=lambda move: rate(board, move), reverse=True)
+        moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
 
         for move in moves:
             board.push(move)
@@ -126,20 +63,19 @@ def negamax(board, depth, alpha, beta):
                 break
 
         # # Add position to the transposition table
-        if abs(alpha - beta) > 1:  # Stops null window searches from being stored
-            if best_score <= alpha:  # Score is lowerbound
-                ttable[key] = (best_move, best_score, "LOWERBOUND", depth)
-            elif best_score >= beta:  # Score is upperbound
-                ttable[key] = (best_move, best_score, "UPPERBOUND", depth)
-            else:  # Score is exact
-                ttable[key] = (best_move, best_score, "EXACT", depth)
+        if best_score <= alpha:
+            ttable[key] = (best_move, -MATE_SCORE, best_score, depth)
+        if alpha < best_score < beta:
+            ttable[key] = (best_move, best_score, best_score, depth)
+        if best_score >= beta:
+            ttable[key] = (best_move, best_score, MATE_SCORE, depth)
 
         return (best_move, best_score)
 
 
 def MTDf(board, depth, guess):
     """
-    Searches the possible moves using negamax but zooming in on the window
+    Searches the possible moves using negamax by zooming in on the window
     Psuedocode and algorithm from Aske Plaat, Jonathan Schaeffer, Wim Pijls, and Arie de Bruin
     """
     upperbound = MATE_SCORE
@@ -160,13 +96,62 @@ def MTDf(board, depth, guess):
     return (move, guess)
 
 
+def negacstar(board, depth, mini, maxi):
+    """
+    Searches the possible moves using negamax by zooming in on the window
+    Pseudocode and algorithm from Jean-Christophe Weill
+    """
+    while (mini < maxi):
+        alpha = (mini + maxi) / 2
+        move, score = negamax(board, depth, alpha, alpha + 1)
+        if score > alpha:
+            mini = score
+        else:
+            maxi = score
+    return (move, score)
+
+
 def iterative_deepening(board, depth):
     """
-    Approaches the desired depth in steps for purposes of
-    transposition and guesses for MTD(f), being overall
-    more effective than searching at the desired depth immediately
+    Approaches the desired depth in steps using MTD(f)
     """
     guess = 0
     for d in range(1, depth + 1):
         move, guess = MTDf(board, d, guess)
     return (move, guess)
+
+
+
+
+class AlphaBetaPruningNullMoveQueiscence(Agent):
+
+    def __init__(self, utility: Utility, time_limit_move: float) -> None:
+        """Setup the Search Agent"""
+        self.utility = utility
+        self.time_limit_move = time_limit_move
+
+    def calculate_move(self, board: chess.Board):
+        """
+        Chooses a move for the CPU
+        If inside opening book make book move
+        If inside Gaviota tablebase make tablebase move
+        Else search for a move
+        """
+        global OPENING_BOOK
+        depth = 4
+        if OPENING_BOOK:
+            try:
+                dir_path = os.path.dirname(os.path.realpath(__file__))
+                with chess.polyglot.open_reader(
+                        os.path.join(dir_path,
+                                     "Opening_Book.bin")) as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
+                    opening = opening_book.choice(board)
+                    opening_book.close()
+                    return opening.move
+            except IndexError:
+                OPENING_BOOK = False
+
+        # return negamax(board, depth, -MATE_SCORE, MATE_SCORE)[0]
+        # return MTDf(board, depth, 0)[0]
+        return negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
+        # return iterative_deepening(board, depth)[0]
