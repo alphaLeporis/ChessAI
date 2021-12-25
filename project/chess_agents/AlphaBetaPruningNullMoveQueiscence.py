@@ -56,8 +56,6 @@ def negamax(board, depth, alpha, beta):
         for move in moves:
             board.push(move)
             score = -negamax(board, depth - 1, -beta, -alpha)[1]
-            if(score > alpha and score < beta):
-                score = -negamax(board, depth -1, -beta, -alpha)[1]
             board.pop()
 
 
@@ -69,7 +67,6 @@ def negamax(board, depth, alpha, beta):
 
             if alpha >= beta:  # Beta cut-off
                 break
-            beta = alpha + 1
 
         # # Add position to the transposition table
         if best_score <= alpha:
