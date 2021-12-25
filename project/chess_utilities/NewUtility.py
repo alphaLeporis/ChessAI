@@ -385,7 +385,10 @@ def evaluate(board):
     - BISHOP: penalty depending on how many friendly pawns on the same color square as bishop,
       smaller penalty when bishop is outside pawn chain
     """
-    if board.is_checkmate():
+    if board.is_stalemate() or board.is_fivefold_repetition():
+        return -MATE_SCORE
+
+    if board.is_checkmate() and board.turn == chess.BLACK:
         return -MATE_SCORE
 
     if ENDGAME_BOOK and get_num_pieces(board) <= 5:
