@@ -29,8 +29,7 @@ def negamax(board, depth, alpha, beta):
     """
     key = chess.polyglot.zobrist_hash(board)
     tt_move = None
-    global start_time
-    global max_time
+
 
     # Search for position in the transposition table
     if key in ttable:
@@ -171,23 +170,44 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
 
 
 def QuiescenceSearch( board, alpha, beta, depth):
+        key = chess.polyglot.zobrist_hash(board)
+
+        tt_move = None
+
+        # Search for position in the transposition table
+        if key in ttable:
+            tt_move, tt_lowerbound, tt_upperbound, tt_depth = ttable[key]
+            if tt_depth >= depth+4:
+                if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
+                    return (tt_move, tt_upperbound)
+                if tt_lowerbound >= beta:
+                    return (tt_move, tt_lowerbound)
+
         flip_value = 1 if board.turn == chess.WHITE else -1
 
-        bestValue = flip_value * evaluate(board)
+        bestValue = evaluate(board)
 
         alpha = max(alpha, bestValue)
 
-        if (alpha >= beta or depth == 0):
+        if (alpha >= beta or depth == 0 or board.is_game_over()):
             return bestValue
+
+        best_move = None
 
         favorable_moves = []
         for move in list(board.legal_moves):
             if is_favorable_move(board, move):
                 favorable_moves.append(move)
+        if(favorable_moves != []):
+            favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
         for move in favorable_moves:
             board.push(move)
             value = -1 * QuiescenceSearch(board, -beta, -alpha, depth-1)
             board.pop()
+
+            if value > bestValue:
+                bestValue = value
+                best_move = move
 
             bestValue = max(bestValue, value)
 
@@ -195,6 +215,14 @@ def QuiescenceSearch( board, alpha, beta, depth):
 
             if (alpha >= beta):
                 break
+
+        if bestValue <= alpha:
+            ttable[key] = (best_move, -MATE_SCORE, bestValue, depth+4)
+        if alpha < bestValue < beta:
+            ttable[key] = (best_move, bestValue, bestValue, depth+4)
+        if bestValue >= beta:
+            ttable[key] = (best_move, bestValue, MATE_SCORE, depth+4)
+
         return bestValue
 
 piece_values = {
@@ -217,3 +245,4 @@ def is_favorable_move(board: chess.Board, move: chess.Move) -> bool:
             ):
                 return True
         return False
+
