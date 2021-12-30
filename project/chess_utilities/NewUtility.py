@@ -5,7 +5,40 @@ from project.chess_utilities.utility import Utility
 START_AS = "WHITE" # Human player plays as: WHITE, BLACK, or RANDOM
 DEPTH = 4 # Search depth, minimum 1
 OPENING_BOOK = True # Use opening book?
-ENDGAME_BOOK = True # Use endgame book?
+ENDGAME_BOOK = False # Use endgame book?
+
+pre_mailbox = [
+     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+     -1,  0,  1,  2,  3,  4,  5,  6,  7, -1,
+     -1,  8,  9, 10, 11, 12, 13, 14, 15, -1,
+     -1, 16, 17, 18, 19, 20, 21, 22, 23, -1,
+     -1, 24, 25, 26, 27, 28, 29, 30, 31, -1,
+     -1, 32, 33, 34, 35, 36, 37, 38, 39, -1,
+     -1, 40, 41, 42, 43, 44, 45, 46, 47, -1,
+     -1, 48, 49, 50, 51, 52, 53, 54, 55, -1,
+     -1, 56, 57, 58, 59, 60, 61, 62, 63, -1,
+     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+]
+
+pre_mailbox64 = [
+    21, 22, 23, 24, 25, 26, 27, 28,
+    31, 32, 33, 34, 35, 36, 37, 38,
+    41, 42, 43, 44, 45, 46, 47, 48,
+    51, 52, 53, 54, 55, 56, 57, 58,
+    61, 62, 63, 64, 65, 66, 67, 68,
+    71, 72, 73, 74, 75, 76, 77, 78,
+    81, 82, 83, 84, 85, 86, 87, 88,
+    91, 92, 93, 94, 95, 96, 97, 98
+]
+
+mailbox = []
+for i in range(len(pre_mailbox)) :
+    mailbox.append(pre_mailbox[(len(pre_mailbox)-1)-i])
+mailbox64 = []
+for i in range(len(pre_mailbox64)) :
+    mailbox64.append(pre_mailbox64[(len(pre_mailbox64)-1)-i])
 
 # Constants
 INF = float("inf")
@@ -385,8 +418,14 @@ def evaluate(board):
     - BISHOP: penalty depending on how many friendly pawns on the same color square as bishop,
       smaller penalty when bishop is outside pawn chain
     """
-    if board.is_checkmate():
-        return -MATE_SCORE
+    #if board.is_checkmate() and not board.turn:
+    #    return -MATE_SCORE
+#
+    #if board.is_checkmate() and board.turn:
+    #    return MATE_SCORE
+
+    if board.is_fivefold_repetition() or board.is_stalemate():
+        return 0
 
     if ENDGAME_BOOK and get_num_pieces(board) <= 5:
         return eval_endgame(board)
@@ -403,9 +442,13 @@ def evaluate(board):
 
     score = round(score / 1000, 4)
 
+    score += 0.4*king_safety(board) if get_num_pieces(board) < 6 else 0
+    score += 0.1 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
+    score += 0.1 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
+
     return score
 
-def rate(board, move, tt_move):
+def rate(board, move, tt_move, tt_score):
     """
     Rates a move in relation to the following order for move ordering:
     - Refutation move (moves from transpositions) | score = 6
@@ -424,7 +467,7 @@ def rate(board, move, tt_move):
     one is higher or lower than the other
     """
     if tt_move:
-        return 6
+        return 6*(tt_score)
 
     if board.is_capture(move):
         if board.is_en_passant(move):
@@ -472,6 +515,26 @@ def get_phase(board):
     phase -= (len(board.pieces(chess.ROOK, chess.WHITE)) + len(board.pieces(chess.ROOK, chess.BLACK))) * rook_phase
     phase -= (len(board.pieces(chess.QUEEN, chess.WHITE)) + len(board.pieces(chess.KNIGHT, chess.BLACK))) * queen_phase
 
-    phase = (phase * 256 + (total_phase / 2)) / total_phase;
+    phase = (phase * 256 + (total_phase / 2)) / total_phase
 
     return phase
+
+def king_safety(board) :
+    safety = 0
+    King = board.king(board.turn)
+    king = board.king(not board.turn)
+    next_K = next_to_king(board, King)
+    next_k = next_to_king(board, king)
+    for square in next_K :
+        safety = safety - len(list(board.attackers(not board.turn, square)))
+    for square in next_k :
+        safety = safety + len(list(board.attackers(board.turn, square)))
+    return safety
+
+def next_to_king(board, king) :
+    vector = [-11, -10, -9, -1, 0, 1, 9, 10, 11]
+    next_to = []
+    for dep in vector :
+        if mailbox[mailbox64[king]-dep] != -1 :
+            next_to.append(mailbox64.index(mailbox64[king]-dep))
+    return next_to

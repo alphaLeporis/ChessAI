@@ -102,7 +102,7 @@ def negamax(board, depth, alpha, beta, max_time):
         best_move = None
         best_score = -INF
         moves = list(board.legal_moves)
-        moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
+        moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
 
         for move in moves:
             if (time.time() - start_time > max_time):
@@ -190,7 +190,7 @@ def QuiescenceSearch(board, alpha, beta, depth):
         if is_favorable_move(board, move):
             favorable_moves.append(move)
     if (favorable_moves != []):
-        favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
+        favorable_moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
     for move in favorable_moves:
         board.push(move)
         value = -1 * QuiescenceSearch(board, -beta, -alpha, depth - 1)
