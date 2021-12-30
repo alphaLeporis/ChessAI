@@ -20,7 +20,7 @@ def play_stockfish():
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:
-    black_player.configure({"Skill Level": 2})
+    black_player.configure({"Skill Level": 1})
     limit = chess.engine.Limit(time=time_limit)
 
     running = True

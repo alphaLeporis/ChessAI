@@ -467,7 +467,7 @@ def rate(board, move, tt_move, tt_score):
     one is higher or lower than the other
     """
     if tt_move:
-        return 6+tt_score
+        return 6+abs(tt_score)
 
     if board.is_capture(move):
         if board.is_en_passant(move):

@@ -56,9 +56,10 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
 
         guess = 0
         start_time = time.time()
-        depth = 1
+        depth = 2
         while (time.time() < start_time + self.time_limit_move and depth < 5):
             move, guess = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
+            #move, guess = negamax(board, depth, -MATE_SCORE, MATE_SCORE)
             depth += 1
         return (move, guess)
 
@@ -87,7 +88,7 @@ def negamax(board, depth, alpha, beta):
         if do_null_move(board) and depth > 3:
             board.push(chess.Move.null())
             null_move_depth_reduction = 2
-            score = -negamax(board, depth - null_move_depth_reduction - 1, -beta, -beta + 1)[1]
+            score = -negamax(board, depth - null_move_depth_reduction, -beta, -beta + 1)[1]
             board.pop()
             if score >= beta:
                 return (None, score)
@@ -136,8 +137,8 @@ def negacstar(board, depth, mini, maxi, max_time):
     """
     start_time = time.time()
     while (mini < maxi):
-        if (time.time()-start_time > max_time):
-            break
+        #if (time.time()-start_time > max_time):
+        #    break
         alpha = (mini + maxi) / 2
         move, score = negamax(board, depth, alpha, alpha + 1)
 
@@ -191,6 +192,7 @@ def QuiescenceSearch(board, alpha, beta, depth):
 
         if value > bestValue:
             bestValue = value
+            best_move = move
 
         if value >= beta:
             return beta
@@ -199,15 +201,6 @@ def QuiescenceSearch(board, alpha, beta, depth):
         #if(time.time()-start_time>max_time):
         #    return bestValue
         alpha = max(alpha, bestValue)
-
-
-
-    #if bestValue <= alpha:
-    #    ttable[key] = (depth+4, best_move, -MATE_SCORE, bestValue)
-    #if alpha < bestValue < beta:
-    #    ttable[key] = (depth+4, best_move, bestValue, bestValue)
-    #if bestValue >= beta:
-    #    ttable[key] = (depth+4, best_move, bestValue, MATE_SCORE)
 
     return alpha
 
