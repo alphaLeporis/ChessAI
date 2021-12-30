@@ -419,10 +419,10 @@ def evaluate(board):
       smaller penalty when bishop is outside pawn chain
     """
     #if board.is_checkmate() and not board.turn:
-    #²    return -MATE_SCORE
-#²
-    #²if board.is_checkmate() and board.turn:
-    #²    return MATE_SCORE
+    #    return -MATE_SCORE
+#
+    #if board.is_checkmate() and board.turn:
+    #    return MATE_SCORE
 
     if board.is_fivefold_repetition() or board.is_stalemate():
         return 0
@@ -442,7 +442,9 @@ def evaluate(board):
 
     score = round(score / 1000, 4)
 
-    score += 0.5*king_safety(board) if get_num_pieces(board) < 6 else 0
+    score += 0.4*king_safety(board) if get_num_pieces(board) < 6 else 0
+    score += 0.1 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
+    score += 0.1 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
 
     return score
 

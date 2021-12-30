@@ -11,29 +11,17 @@ from project.chess_utilities.NewUtility import *
 start_time = 0
 max_time = 0
 ttable = {}
+
+
 def negamax(board, depth, alpha, beta):
-    """
-    Searches the possible moves using negamax, alpha-beta pruning, null-move pruning, and a transposition table
-    Initial psuedocode adapated from Jeroen W.T. Carolus
-    TODO
-    - killer heuristic
-    - null move pruning
-    - history heuristic
-    - legal move generation (bitboards)
-    - late move reduction
-    - https://www.chessprogramming.org/Search#Alpha-Beta_Enhancements
-    - parallel search
-    - extensions
-    - aspiration search?
-    - Quiescence Search (doesnt work)
-    """
+    global start_time
+    global max_time
     key = chess.polyglot.zobrist_hash(board)
     tt_move = None
 
-
     # Search for position in the transposition table
     if key in ttable:
-        tt_move, tt_lowerbound, tt_upperbound, tt_depth = ttable[key]
+        tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
         if tt_depth >= depth:
             if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
                 return (tt_move, tt_upperbound)
@@ -42,9 +30,17 @@ def negamax(board, depth, alpha, beta):
 
     if depth == 0 or board.is_game_over():
         score = QuiescenceSearch(board, alpha, beta, 3)
-        ttable[key] = (None, score, score, depth)  # Add position to the transposition table
+        ttable[key] = (depth, None, score, score)
         return (None, score)
     else:
+        if do_null_move(board) and depth > 3:
+            board.push(chess.Move.null())
+            null_move_depth_reduction = 2
+            score = -negamax(board, depth - null_move_depth_reduction - 1, -beta, -beta + 1)[1]
+            board.pop()
+            if score >= beta:
+                return (None, score)
+
         # Alpha-beta negamax
         score = 0
         best_move = None
@@ -57,10 +53,12 @@ def negamax(board, depth, alpha, beta):
             score = -negamax(board, depth - 1, -beta, -alpha)[1]
             board.pop()
 
-
             if score > best_score:
                 best_move = move
                 best_score = score
+
+            #if (time.time() - start_time > max_time):
+            #    return (best_move, best_score)
 
             alpha = max(alpha, best_score)
 
@@ -69,36 +67,14 @@ def negamax(board, depth, alpha, beta):
 
         # # Add position to the transposition table
         if best_score <= alpha:
-            ttable[key] = (best_move, -MATE_SCORE, best_score, depth)
+            ttable[key] = (depth, best_move, -MATE_SCORE, best_score)
         if alpha < best_score < beta:
-            ttable[key] = (best_move, best_score, best_score, depth)
+            ttable[key] = (depth, best_move, best_score, best_score)
         if best_score >= beta:
-            ttable[key] = (best_move, best_score, MATE_SCORE, depth)
+            ttable[key] = (depth, best_move, best_score, MATE_SCORE)
 
         return (best_move, best_score)
 
-
-def MTDf(board, depth, guess):
-    """
-    Searches the possible moves using negamax by zooming in on the window
-    Psuedocode and algorithm from Aske Plaat, Jonathan Schaeffer, Wim Pijls, and Arie de Bruin
-    """
-    upperbound = MATE_SCORE
-    lowerbound = -MATE_SCORE
-    while (lowerbound < upperbound):
-        if guess == lowerbound:
-            beta = guess + 1
-        else:
-            beta = guess
-
-        move, guess = negamax(board, depth, beta - 1, beta)
-
-        if guess < beta:
-            upperbound = guess
-        else:
-            lowerbound = guess
-
-    return (move, guess)
 
 
 def negacstar(board, depth, mini, maxi):
@@ -111,6 +87,7 @@ def negacstar(board, depth, mini, maxi):
     while (mini < maxi):
         alpha = (mini + maxi) / 2
         move, score = negamax(board, depth, alpha, alpha + 1)
+
         if score > alpha:
             mini = score
         else:
@@ -132,8 +109,6 @@ def iterative_deepening(board, depth):
     return (move, guess)
 
 
-
-
 class AlphaBetaPruningNullMoveQueiscence(Agent):
 
     def __init__(self, utility: Utility, time_limit_move: float) -> None:
@@ -142,15 +117,13 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
         self.author = "Alexander, Louis, Niels"
 
     def calculate_move(self, board: chess.Board):
-        """
-        Chooses a move for the CPU
-        If inside opening book make book move
-        If inside Gaviota tablebase make tablebase move
-        Else search for a move
-        """
+        global start_time
+        global max_time
         global OPENING_BOOK
         depth = 4
 
+        start_time = time.time()
+        max_time = 14.9
         if OPENING_BOOK:
             try:
                 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -163,86 +136,106 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
             except IndexError:
                 OPENING_BOOK = False
 
-        # return negamax(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-        # return MTDf(board, depth, 0)[0]
-        return negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-        # return iterative_deepening(board, depth)[0]
+        move = negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
+
+        set_ttable(board, move)
+        return move
 
 
-def QuiescenceSearch( board, alpha, beta, depth):
-        key = chess.polyglot.zobrist_hash(board)
+def QuiescenceSearch(board, alpha, beta, depth):
+    global start_time
+    global max_time
+    key = chess.polyglot.zobrist_hash(board)
 
-        tt_move = None
+    tt_move = None
 
-        # Search for position in the transposition table
-        if key in ttable:
-            tt_move, tt_lowerbound, tt_upperbound, tt_depth = ttable[key]
-            if tt_depth >= depth+4:
-                if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
-                    return (tt_move, tt_upperbound)
-                if tt_lowerbound >= beta:
-                    return (tt_move, tt_lowerbound)
+    # Search for position in the transposition table
+    if key in ttable:
+        tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
+        if tt_depth >= depth:
+            if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
+                return tt_upperbound
+            if tt_lowerbound >= beta:
+                return tt_lowerbound
 
-        flip_value = 1 if board.turn == chess.WHITE else -1
 
-        bestValue = evaluate(board)
+    bestValue = evaluate(board)
 
-        alpha = max(alpha, bestValue)
+    alpha = max(alpha, bestValue)
 
-        if (alpha >= beta or depth == 0 or board.is_game_over()):
-            return bestValue
-
-        best_move = None
-
-        favorable_moves = []
-        for move in list(board.legal_moves):
-            if is_favorable_move(board, move):
-                favorable_moves.append(move)
-        if(favorable_moves != []):
-            favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
-        for move in favorable_moves:
-            board.push(move)
-            value = -1 * QuiescenceSearch(board, -beta, -alpha, depth-1)
-            board.pop()
-
-            if value > bestValue:
-                bestValue = value
-                best_move = move
-
-            bestValue = max(bestValue, value)
-
-            alpha = max(alpha, bestValue)
-
-            if (alpha >= beta):
-                break
-
-        if bestValue <= alpha:
-            ttable[key] = (best_move, -MATE_SCORE, bestValue, depth+4)
-        if alpha < bestValue < beta:
-            ttable[key] = (best_move, bestValue, bestValue, depth+4)
-        if bestValue >= beta:
-            ttable[key] = (best_move, bestValue, MATE_SCORE, depth+4)
-
+    if (alpha >= beta or depth == 0 or board.is_game_over()):
         return bestValue
 
+    best_move = None
+
+    favorable_moves = []
+    for move in list(board.legal_moves):
+        if is_favorable_move(board, move):
+            favorable_moves.append(move)
+    if (favorable_moves != []):
+        favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
+    for move in favorable_moves:
+        board.push(move)
+        value = -1 * QuiescenceSearch(board, -beta, -alpha, depth - 1)
+        board.pop()
+
+        if value > bestValue:
+            bestValue = value
+            best_move = move
+
+        bestValue = max(bestValue, value)
+        #if(time.time()-start_time>max_time):
+        #    return bestValue
+        alpha = max(alpha, bestValue)
+
+        if (alpha >= beta):
+            break
+
+    if bestValue <= alpha:
+        ttable[key] = (depth+4, best_move, -MATE_SCORE, bestValue)
+    if alpha < bestValue < beta:
+        ttable[key] = (depth+4, best_move, bestValue, bestValue)
+    if bestValue >= beta:
+        ttable[key] = (depth+4, best_move, bestValue, MATE_SCORE)
+
+    return bestValue
+
+
 piece_values = {
-        chess.BISHOP: 330,
-        chess.KING: 20_000,
-        chess.KNIGHT: 320,
-        chess.PAWN: 100,
-        chess.QUEEN: 900,
-        chess.ROOK: 500,
-    }
+    chess.BISHOP: 330,
+    chess.KING: 20_000,
+    chess.KNIGHT: 320,
+    chess.PAWN: 100,
+    chess.QUEEN: 900,
+    chess.ROOK: 500,
+}
+
 
 def is_favorable_move(board: chess.Board, move: chess.Move) -> bool:
-        if move.promotion is not None:
+    if move.promotion is not None:
+        return True
+    if board.is_capture(move) and not board.is_en_passant(move):
+        if piece_values.get(board.piece_type_at(move.from_square)) < piece_values.get(
+                board.piece_type_at(move.to_square)
+        ) or len(board.attackers(board.turn, move.to_square)) > len(
+            board.attackers(not board.turn, move.to_square)
+        ):
             return True
-        if board.is_capture(move) and not board.is_en_passant(move):
-            if piece_values.get(board.piece_type_at(move.from_square)) < piece_values.get(
-                    board.piece_type_at(move.to_square)
-            ) or len(board.attackers(board.turn, move.to_square)) > len(
-                board.attackers(not board.turn, move.to_square)
-            ):
-                return True
-        return False
+    return False
 
+def do_null_move(board):
+    """
+    Returns true if conditions are met to perform null move pruning
+    Returns false if side to move is in check or it's the endgame (because position is possibly zugzwang)
+    """
+    endgame_threshold = 100
+    if board.is_check() or get_phase(board) >= endgame_threshold:
+        return False
+    return True
+
+def set_ttable(board, move):
+    """
+    Clear the transposition table after an irreversible move (pawn moves, captures, etc)
+    """
+    if board.is_irreversible(move):
+        ttable.clear()
