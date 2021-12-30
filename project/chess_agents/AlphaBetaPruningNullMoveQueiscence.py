@@ -110,7 +110,7 @@ def negamax(board, depth, alpha, beta, max_time):
                 print("Is cancelled")
                 break
             board.push(move)
-            score = -negamax(board, depth - 1, -beta, -alpha)[1]
+            score = -negamax(board, depth - 1, -beta, -alpha, max_time-(time.time() - start_time))[1]
             board.pop()
 
             if score > best_score:
@@ -133,7 +133,7 @@ def negamax(board, depth, alpha, beta, max_time):
         if best_score >= beta:
             ttable[key] = (depth, best_move, best_score, MATE_SCORE, best_score)
 
-        return (best_move, best_score)
+        return (best_move, best_score, canceled)
 
 
 
