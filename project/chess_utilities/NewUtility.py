@@ -5,7 +5,7 @@ from project.chess_utilities.utility import Utility
 START_AS = "WHITE" # Human player plays as: WHITE, BLACK, or RANDOM
 DEPTH = 4 # Search depth, minimum 1
 OPENING_BOOK = True # Use opening book?
-ENDGAME_BOOK = False # Use endgame book?
+ENDGAME_BOOK = True # Use endgame book?
 
 # Constants
 INF = float("inf")

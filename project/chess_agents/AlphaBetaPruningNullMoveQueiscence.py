@@ -11,6 +11,59 @@ from project.chess_utilities.NewUtility import *
 start_time = 0
 max_time = 0
 ttable = {}
+
+class AlphaBetaPruningNullMoveQueiscence(Agent):
+
+    def __init__(self, utility: Utility, time_limit_move: float) -> None:
+        super().__init__(utility, time_limit_move)
+        self.name = "Best Agent Ever"
+        self.author = "Alexander, Louis, Niels"
+
+    def calculate_move(self, board: chess.Board):
+        """
+        Chooses a move for the CPU
+        If inside opening book make book move
+        If inside Gaviota tablebase make tablebase move
+        Else search for a move
+        """
+        start_time = time.time()
+        global OPENING_BOOK
+        depth = 4
+
+        if OPENING_BOOK:
+            try:
+                dir_path = os.path.dirname(os.path.realpath(__file__))
+                with chess.polyglot.open_reader(
+                        os.path.join(dir_path,
+                                     "Opening_Book.bin")) as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
+                    opening = opening_book.choice(board)
+                    opening_book.close()
+                    print("This took: " + str(time.time() - start_time))
+                    return opening.move
+            except IndexError:
+                OPENING_BOOK = False
+
+        # return negamax(board, depth, -MATE_SCORE, MATE_SCORE)[0]
+        # return MTDf(board, depth, 0)[0]
+        #return negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
+        move = self.iterative_deepening(board)[0]
+        print("This took: "+ str(time.time() - start_time))
+        return move
+
+    def iterative_deepening(self, board):
+        """
+        Approaches the desired depth in steps using MTD(f)
+        """
+
+        guess = 0
+        start_time = time.time()
+        depth = 1
+        while (time.time() < start_time + self.time_limit_move):
+            move, guess = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
+            depth += 1
+        return (move, guess)
+
+
 def negamax(board, depth, alpha, beta):
     """
     Searches the possible moves using negamax, alpha-beta pruning, null-move pruning, and a transposition table
@@ -102,14 +155,15 @@ def MTDf(board, depth, guess):
     return (move, guess)
 
 
-def negacstar(board, depth, mini, maxi):
+def negacstar(board, depth, mini, maxi, max_time):
     """
     Searches the possible moves using negamax by zooming in on the window
     Pseudocode and algorithm from Jean-Christophe Weill
     """
-    global start_time
-    global max_time
+    start_time = time.time()
     while (mini < maxi):
+        if (time.time()-start_time > max_time):
+            break
         alpha = (mini + maxi) / 2
         move, score = negamax(board, depth, alpha, alpha + 1)
         if score > alpha:
@@ -118,56 +172,6 @@ def negacstar(board, depth, mini, maxi):
             maxi = score
     return (move, score)
 
-
-def iterative_deepening(board, depth):
-    """
-    Approaches the desired depth in steps using MTD(f)
-    """
-    global start_time
-    global max_time
-    guess = 0
-    start_time = time.time()
-    max_time = 14
-    for d in range(1, depth + 1):
-        move, guess = negacstar(board, depth, -MATE_SCORE, MATE_SCORE)
-    return (move, guess)
-
-
-
-
-class AlphaBetaPruningNullMoveQueiscence(Agent):
-
-    def __init__(self, utility: Utility, time_limit_move: float) -> None:
-        super().__init__(utility, time_limit_move)
-        self.name = "Best Agent Ever"
-        self.author = "Alexander, Louis, Niels"
-
-    def calculate_move(self, board: chess.Board):
-        """
-        Chooses a move for the CPU
-        If inside opening book make book move
-        If inside Gaviota tablebase make tablebase move
-        Else search for a move
-        """
-        global OPENING_BOOK
-        depth = 4
-
-        if OPENING_BOOK:
-            try:
-                dir_path = os.path.dirname(os.path.realpath(__file__))
-                with chess.polyglot.open_reader(
-                        os.path.join(dir_path,
-                                     "Opening_Book.bin")) as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
-                    opening = opening_book.choice(board)
-                    opening_book.close()
-                    return opening.move
-            except IndexError:
-                OPENING_BOOK = False
-
-        # return negamax(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-        # return MTDf(board, depth, 0)[0]
-        return negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-        # return iterative_deepening(board, depth)[0]
 
 
 def QuiescenceSearch( board, alpha, beta, depth):
