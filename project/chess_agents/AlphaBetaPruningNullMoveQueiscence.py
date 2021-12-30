@@ -57,11 +57,14 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
         guess = 0
         start_time = time.time()
         depth = 1
-        while (time.time() < start_time + self.time_limit_move and depth < 5):
+        while (time.time() < start_time + self.time_limit_move):
             move, guess, canceled  = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
             if not canceled:
                 best_move = move
             depth += 1
+        print("Hoe diep zitten we: " + str(depth))
+        if not best_move:
+            best_move = list(board.legal_moves)[0]
         return (best_move, guess)
 
 
@@ -99,7 +102,7 @@ def negamax(board, depth, alpha, beta, max_time):
         best_move = None
         best_score = -INF
         moves = list(board.legal_moves)
-        moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
+        moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
 
         for move in moves:
             if (time.time() - start_time > max_time):
@@ -145,7 +148,7 @@ def negacstar(board, depth, mini, maxi, max_time):
         if (time.time()-start_time > max_time):
             break
         alpha = (mini + maxi) / 2
-        move, score, canceled = negamax(board, depth, alpha, alpha + 1, max_time-(time.time()-start_time)-1)
+        move, score, canceled = negamax(board, depth, alpha, alpha + 1, max_time-(time.time()-start_time))
 
         if score > alpha:
             mini = score
@@ -187,7 +190,7 @@ def QuiescenceSearch(board, alpha, beta, depth):
         if is_favorable_move(board, move):
             favorable_moves.append(move)
     if (favorable_moves != []):
-        favorable_moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
+        favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
     for move in favorable_moves:
         board.push(move)
         value = -1 * QuiescenceSearch(board, -beta, -alpha, depth - 1)
