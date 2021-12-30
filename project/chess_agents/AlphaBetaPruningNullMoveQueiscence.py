@@ -53,45 +53,49 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
         """
         Approaches the desired depth in steps using MTD(f)
         """
-
+        final_move = None
         guess = 0
         start_time = time.time()
-        depth = 2
-        while (time.time() < start_time + self.time_limit_move and depth < 5):
-            move, guess = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
-            #move, guess = negamax(board, depth, -MATE_SCORE, MATE_SCORE)
+        depth = 1
+        while (time.time() < start_time + self.time_limit_move):
+            move, guess, canceled  = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
+            if not canceled:
+                best_move = move
             depth += 1
-        return (move, guess)
+        print("Hoe diep zitten we: " + str(depth))
+        if not best_move:
+            best_move = list(board.legal_moves)[0]
+        return (best_move, guess)
 
 
-def negamax(board, depth, alpha, beta):
-    global start_time
-    global max_time
+def negamax(board, depth, alpha, beta, max_time):
+    start_time = time.time()
     key = chess.polyglot.zobrist_hash(board)
     tt_move = None
     tt_score = None
+    canceled = False
 
     # Search for position in the transposition table
     if key in ttable:
         tt_depth, tt_move, tt_lowerbound, tt_upperbound, tt_score = ttable[key]
         if tt_depth >= depth:
             if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
-                return (tt_move, tt_upperbound)
+                return (tt_move, tt_upperbound, canceled)
             if tt_lowerbound >= beta:
-                return (tt_move, tt_lowerbound)
+                return (tt_move, tt_lowerbound, canceled)
 
     if depth == 0 or board.is_game_over():
         score = QuiescenceSearch(board, alpha, beta, 3)
         ttable[key] = (depth, None, score, score, score)
-        return (None, score)
+        return (None, score, canceled)
     else:
         if do_null_move(board) and depth > 3:
             board.push(chess.Move.null())
             null_move_depth_reduction = 2
-            score = -negamax(board, depth - null_move_depth_reduction, -beta, -beta + 1)[1]
+            score = -negamax(board, depth - null_move_depth_reduction - 1, -beta, -beta + 1,max_time-(time.time() - start_time))[1]
             board.pop()
             if score >= beta:
-                return (None, score)
+                return (None, score, canceled)
 
         # Alpha-beta negamax
         score = 0
@@ -101,6 +105,10 @@ def negamax(board, depth, alpha, beta):
         moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
 
         for move in moves:
+            if (time.time() - start_time > max_time):
+                canceled = True
+                print("Is cancelled")
+                break
             board.push(move)
             score = -negamax(board, depth - 1, -beta, -alpha)[1]
             board.pop()
@@ -137,16 +145,16 @@ def negacstar(board, depth, mini, maxi, max_time):
     """
     start_time = time.time()
     while (mini < maxi):
-        #if (time.time()-start_time > max_time):
-        #    break
+        if (time.time()-start_time > max_time):
+            break
         alpha = (mini + maxi) / 2
-        move, score = negamax(board, depth, alpha, alpha + 1)
+        move, score, canceled = negamax(board, depth, alpha, alpha + 1, max_time-(time.time()-start_time))
 
         if score > alpha:
             mini = score
         else:
             maxi = score
-    return (move, score)
+    return (move, score, canceled)
 
 
 def QuiescenceSearch(board, alpha, beta, depth):
@@ -192,7 +200,6 @@ def QuiescenceSearch(board, alpha, beta, depth):
 
         if value > bestValue:
             bestValue = value
-            best_move = move
 
         if value >= beta:
             return beta
@@ -241,5 +248,6 @@ def set_ttable(board, move):
     """
     Clear the transposition table after an irreversible move (pawn moves, captures, etc)
     """
-    if board.is_irreversible(move):
-        ttable.clear()
+    if move:
+        if board.is_irreversible(move):
+            ttable.clear()
