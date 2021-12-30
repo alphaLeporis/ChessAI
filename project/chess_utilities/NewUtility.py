@@ -448,7 +448,7 @@ def evaluate(board):
 
     return score
 
-def rate(board, move, tt_move):
+def rate(board, move, tt_move, tt_score):
     """
     Rates a move in relation to the following order for move ordering:
     - Refutation move (moves from transpositions) | score = 6
@@ -467,7 +467,7 @@ def rate(board, move, tt_move):
     one is higher or lower than the other
     """
     if tt_move:
-        return 6
+        return 6+tt_score
 
     if board.is_capture(move):
         if board.is_en_passant(move):

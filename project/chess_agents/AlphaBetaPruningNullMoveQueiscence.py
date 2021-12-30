@@ -43,13 +43,11 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
             except IndexError:
                 OPENING_BOOK = False
 
-        # return negamax(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-        # return MTDf(board, depth, 0)[0]
-        #return negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
         move = self.iterative_deepening(board)[0]
         print("This took: "+ str(time.time() - start_time))
         set_ttable(board, move)
         return move
+
 
     def iterative_deepening(self, board):
         """
@@ -59,7 +57,7 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
         guess = 0
         start_time = time.time()
         depth = 1
-        while (time.time() < start_time + self.time_limit_move):
+        while (time.time() < start_time + self.time_limit_move and depth < 5):
             move, guess = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
             depth += 1
         return (move, guess)
@@ -70,10 +68,11 @@ def negamax(board, depth, alpha, beta):
     global max_time
     key = chess.polyglot.zobrist_hash(board)
     tt_move = None
+    tt_score = None
 
     # Search for position in the transposition table
     if key in ttable:
-        tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
+        tt_depth, tt_move, tt_lowerbound, tt_upperbound, tt_score = ttable[key]
         if tt_depth >= depth:
             if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
                 return (tt_move, tt_upperbound)
@@ -82,7 +81,7 @@ def negamax(board, depth, alpha, beta):
 
     if depth == 0 or board.is_game_over():
         score = QuiescenceSearch(board, alpha, beta, 3)
-        ttable[key] = (depth, None, score, score)
+        ttable[key] = (depth, None, score, score, score)
         return (None, score)
     else:
         if do_null_move(board) and depth > 3:
@@ -98,7 +97,7 @@ def negamax(board, depth, alpha, beta):
         best_move = None
         best_score = -INF
         moves = list(board.legal_moves)
-        moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
+        moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
 
         for move in moves:
             board.push(move)
@@ -119,24 +118,26 @@ def negamax(board, depth, alpha, beta):
 
         # # Add position to the transposition table
         if best_score <= alpha:
-            ttable[key] = (depth, best_move, -MATE_SCORE, best_score)
+            ttable[key] = (depth, best_move, -MATE_SCORE, best_score, best_score)
         if alpha < best_score < beta:
-            ttable[key] = (depth, best_move, best_score, best_score)
+            ttable[key] = (depth, best_move, best_score, best_score, best_score)
         if best_score >= beta:
-            ttable[key] = (depth, best_move, best_score, MATE_SCORE)
+            ttable[key] = (depth, best_move, best_score, MATE_SCORE, best_score)
 
         return (best_move, best_score)
 
 
 
-def negacstar(board, depth, mini, maxi):
+
+def negacstar(board, depth, mini, maxi, max_time):
     """
     Searches the possible moves using negamax by zooming in on the window
     Pseudocode and algorithm from Jean-Christophe Weill
     """
-    global start_time
-    global max_time
+    start_time = time.time()
     while (mini < maxi):
+        if (time.time()-start_time > max_time):
+            break
         alpha = (mini + maxi) / 2
         move, score = negamax(board, depth, alpha, alpha + 1)
 
@@ -147,51 +148,18 @@ def negacstar(board, depth, mini, maxi):
     return (move, score)
 
 
-
-class AlphaBetaPruningNullMoveQueiscence(Agent):
-
-    def __init__(self, utility: Utility, time_limit_move: float) -> None:
-        super().__init__(utility, time_limit_move)
-        self.name = "Best Agent Ever"
-        self.author = "Alexander, Louis, Niels"
-
-    def calculate_move(self, board: chess.Board):
-        global start_time
-        global max_time
-        global OPENING_BOOK
-        depth = 4
-
-        start_time = time.time()
-        max_time = 14.9
-        if OPENING_BOOK:
-            try:
-                dir_path = os.path.dirname(os.path.realpath(__file__))
-                with chess.polyglot.open_reader(
-                        os.path.join(dir_path,
-                                     "Opening_Book.bin")) as opening_book:  # https://sourceforge.net/projects/codekiddy-chess/files/
-                    opening = opening_book.choice(board)
-                    opening_book.close()
-                    return opening.move
-            except IndexError:
-                OPENING_BOOK = False
-
-        move = negacstar(board, depth, -MATE_SCORE, MATE_SCORE)[0]
-
-        set_ttable(board, move)
-        return move
-
-
 def QuiescenceSearch(board, alpha, beta, depth):
     global start_time
     global max_time
     key = chess.polyglot.zobrist_hash(board)
 
     tt_move = None
+    tt_score = None
 
-    # Search for position in the transposition table
+     #Search for position in the transposition table
     if key in ttable:
-        tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
-        if tt_depth >= depth:
+        tt_depth, tt_move, tt_lowerbound, tt_upperbound, tt_score = ttable[key]
+        if tt_depth >= depth+4:
             if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
                 return tt_upperbound
             if tt_lowerbound >= beta:
@@ -199,7 +167,8 @@ def QuiescenceSearch(board, alpha, beta, depth):
 
 
     bestValue = evaluate(board)
-
+    if bestValue >= beta:
+        return beta
     alpha = max(alpha, bestValue)
 
     if (alpha >= beta or depth == 0 or board.is_game_over()):
@@ -212,32 +181,35 @@ def QuiescenceSearch(board, alpha, beta, depth):
         if is_favorable_move(board, move):
             favorable_moves.append(move)
     if (favorable_moves != []):
-        favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
+        favorable_moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
     for move in favorable_moves:
         board.push(move)
         value = -1 * QuiescenceSearch(board, -beta, -alpha, depth - 1)
+        key = chess.polyglot.zobrist_hash(board)
+        ttable[key] = (0, None, value, value, value)
         board.pop()
 
         if value > bestValue:
             bestValue = value
-            best_move = move
+
+        if value >= beta:
+            return beta
 
         bestValue = max(bestValue, value)
         #if(time.time()-start_time>max_time):
         #    return bestValue
         alpha = max(alpha, bestValue)
 
-        if (alpha >= beta):
-            break
 
-    if bestValue <= alpha:
-        ttable[key] = (depth+4, best_move, -MATE_SCORE, bestValue)
-    if alpha < bestValue < beta:
-        ttable[key] = (depth+4, best_move, bestValue, bestValue)
-    if bestValue >= beta:
-        ttable[key] = (depth+4, best_move, bestValue, MATE_SCORE)
 
-    return bestValue
+    #if bestValue <= alpha:
+    #    ttable[key] = (depth+4, best_move, -MATE_SCORE, bestValue)
+    #if alpha < bestValue < beta:
+    #    ttable[key] = (depth+4, best_move, bestValue, bestValue)
+    #if bestValue >= beta:
+    #    ttable[key] = (depth+4, best_move, bestValue, MATE_SCORE)
+
+    return alpha
 
 
 piece_values = {
