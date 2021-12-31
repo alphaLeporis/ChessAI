@@ -364,7 +364,7 @@ def psqt_eval(board):
         psqt_mg_score = mg_table[7 - int(pos / 8)][pos % 8]
         psqt_eg_score = eg_table[7 - int(pos / 8)][pos % 8]
         psqt_score += (((psqt_mg_score * (256 - phase)) + (psqt_eg_score * phase)) / 256) * value
-        psqt_score += piece_val[piece.symbol()]*10 if board.turn else piece_val[piece.symbol()]*-10
+        #psqt_score += piece_val[piece.symbol()]*10 if board.turn else piece_val[piece.symbol()]*-10
 
     return psqt_score
 
@@ -414,18 +414,18 @@ def evaluate(board):
     psqt_weight = 1
     mobility_weight = 0
 
-    #material_score = material_eval(board)
+    material_score = material_eval(board)
     psqt_score = psqt_eval(board)
     #mobility_score = mobility_eval(board)
 
     #score = (material_score * material_weight) + (psqt_score * psqt_weight) + (mobility_score * mobility_weight)
-    score = psqt_score
+    score = (material_score * material_weight) + psqt_score
 
-    #score = round(score / 1000, 4)
+    score = round(score / 1000, 4)
 
     score += 0.4*king_safety(board) if get_num_pieces(board) < 6 else 0
-    score += 50 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
-    score += 50 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
+    score += 0.1 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
+    score += 0.1 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
 
     return score
 
