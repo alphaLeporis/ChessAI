@@ -92,7 +92,7 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
             start_time2 = time.time()
             time_left = max_time - (time.time() - start_time2)
 
-            Parallel(n_jobs=4)(delayed(self.alpha_beta_negamax)(board.copy(), move, depth, alpha, beta,start_time2, time_left) for move in moves)
+            Parallel(n_jobs=8)(delayed(self.alpha_beta_negamax)(board.copy(), move, depth, alpha, beta,start_time2, time_left) for move in moves)
 
             # # Add position to the transposition table
             if best_score <= alpha:
