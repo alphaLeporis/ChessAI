@@ -45,7 +45,9 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
 
         move = self.iterative_deepening(board)[0]
         print("This took: "+ str(time.time() - start_time))
-        set_ttable(board, move)
+        if board.is_irreversible(move):  # Reset transposition table
+            ttable.clear()
+        htable = [[[0 for x in range(64)] for y in range(64)] for z in range(2)]
         return move
 
 
@@ -53,12 +55,12 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
         """
         Approaches the desired depth in steps using MTD(f)
         """
-        final_move = None
+        best_move = None
         guess = 0
         start_time = time.time()
         depth = 1
         while (time.time() < start_time + self.time_limit_move):
-            move, guess, canceled  = negacstar(board, depth, -MATE_SCORE, MATE_SCORE, self.time_limit_move-(time.time()-start_time))
+            move, guess, canceled  = MTDf(board, depth, guess, self.time_limit_move-(time.time()-start_time))
             if not canceled:
                 best_move = move
             depth += 1
@@ -102,7 +104,10 @@ def negamax(board, depth, alpha, beta, max_time):
         best_move = None
         best_score = -INF
         moves = list(board.legal_moves)
-        moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
+        moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
+
+        moves_searched = 0
+        failed_high = False
 
         for move in moves:
             if (time.time() - start_time > max_time):
@@ -110,8 +115,16 @@ def negamax(board, depth, alpha, beta, max_time):
                 print("Is cancelled")
                 break
             board.push(move)
-            score = -negamax(board, depth - 1, -beta, -alpha, max_time-(time.time() - start_time))[1]
+            full_depth_moves_threshold = 4
+            reduction_threshold = 4
+            late_move_depth_reduction = 1
+            if moves_searched >= full_depth_moves_threshold and failed_high == False and depth >= reduction_threshold and reduction_ok(board, move):
+                score = -negamax(board, depth - 1 - late_move_depth_reduction, -beta, -alpha, max_time - (time.time() - start_time))[1]
+            else:
+                score = -negamax(board, depth - 1, -beta, -alpha, max_time-(time.time() - start_time))[1]
             board.pop()
+
+            moves_searched += 1
 
             if score > best_score:
                 best_move = move
@@ -122,7 +135,11 @@ def negamax(board, depth, alpha, beta, max_time):
 
             alpha = max(alpha, best_score)
 
-            if alpha >= beta:  # Beta cut-off
+            if best_score >= beta:  # Beta cut-off (fails high)
+                failed_high = True
+                if not board.is_capture(move):
+                    htable[board.piece_at(move.from_square).color][move.from_square][
+                        move.to_square] += depth ** 2  # Update history heuristic table
                 break
 
         # # Add position to the transposition table
@@ -136,7 +153,31 @@ def negamax(board, depth, alpha, beta, max_time):
         return (best_move, best_score, canceled)
 
 
+def MTDf(board, depth, guess, max_time):
+    """
+    Searches the possible moves using negamax by zooming in on the window
+    Psuedocode from Aske Plaat, Jonathan Schaeffer, Wim Pijls, and Arie de Bruin
+    """
+    upperbound = MATE_SCORE
+    lowerbound = -MATE_SCORE
+    start_time = time.time()
 
+    while (lowerbound < upperbound):
+        if (time.time() - start_time > max_time):
+            break
+        if guess == lowerbound:
+            beta = guess + 1
+        else:
+            beta = guess
+
+        move, score, canceled = negamax(board, depth, beta-1, beta, max_time - (time.time() - start_time))
+
+        if guess < beta:
+            upperbound = guess
+        else:
+            lowerbound = guess
+
+    return (move, guess, canceled)
 
 def negacstar(board, depth, mini, maxi, max_time):
     """
@@ -144,16 +185,16 @@ def negacstar(board, depth, mini, maxi, max_time):
     Pseudocode and algorithm from Jean-Christophe Weill
     """
     start_time = time.time()
-    while (mini < maxi):
-        if (time.time()-start_time > max_time):
-            break
-        alpha = (mini + maxi) / 2
-        move, score, canceled = negamax(board, depth, alpha, alpha + 1, max_time-(time.time()-start_time))
+    #while (mini < maxi):
+       #if (time.time()-start_time > max_time):
+       #    break
+       # alpha = (mini + maxi) / 2
+    move, score, canceled = negamax(board, depth, -INF, INF, max_time-(time.time()-start_time))
 
-        if score > alpha:
-            mini = score
-        else:
-            maxi = score
+        #if score > alpha:
+         #   mini = score
+        #else:
+         #   maxi = score
     return (move, score, canceled)
 
 
@@ -176,8 +217,8 @@ def QuiescenceSearch(board, alpha, beta, depth):
 
 
     bestValue = evaluate(board)
-    if bestValue >= beta:
-        return beta
+    #if bestValue >= beta:
+    #    return beta
     alpha = max(alpha, bestValue)
 
     if (alpha >= beta or depth == 0 or board.is_game_over()):
@@ -190,7 +231,7 @@ def QuiescenceSearch(board, alpha, beta, depth):
         if is_favorable_move(board, move):
             favorable_moves.append(move)
     if (favorable_moves != []):
-        favorable_moves.sort(key=lambda move: rate(board, move, tt_move, tt_score), reverse=True)
+        favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
     for move in favorable_moves:
         board.push(move)
         value = -1 * QuiescenceSearch(board, -beta, -alpha, depth - 1)
@@ -198,16 +239,15 @@ def QuiescenceSearch(board, alpha, beta, depth):
         ttable[key] = (0, None, value, value, value)
         board.pop()
 
-        if value > bestValue:
-            bestValue = value
+       # if value > bestValue:
+       #     bestValue = value
 
         if value >= beta:
             return beta
 
         bestValue = max(bestValue, value)
-        #if(time.time()-start_time>max_time):
-        #    return bestValue
-        alpha = max(alpha, bestValue)
+
+        alpha = max(alpha, value)
 
     return alpha
 
@@ -240,9 +280,11 @@ def do_null_move(board):
     Returns false if side to move is in check or it's the endgame (because position is possibly zugzwang)
     """
     endgame_threshold = 100
-    if board.is_check() or get_phase(board) >= endgame_threshold:
+    if (board.ply() >= 1 and board.peek() != chess.Move.null()) or board.is_check() or get_phase(
+            board) >= endgame_threshold:
         return False
     return True
+
 
 def set_ttable(board, move):
     """
@@ -251,3 +293,19 @@ def set_ttable(board, move):
     if move:
         if board.is_irreversible(move):
             ttable.clear()
+
+def reduction_ok(board, move):
+    """
+    Returns true if conditions are met to perform late move reduction
+    Returns false if move:
+    - Is a capture
+    - Is a promotion
+    - Gives check
+    - Is made while in check
+    """
+    result = True
+    board.pop()
+    if board.is_capture(move) or move.promotion or board.gives_check(move) or board.is_check():
+        result = False
+    board.push(move)
+    return result
