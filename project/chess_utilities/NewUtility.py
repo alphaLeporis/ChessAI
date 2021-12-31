@@ -401,11 +401,11 @@ def eval_endgame(board):
 
 
 def evaluate(board):
-    if board.is_checkmate():
-        return -MATE_SCORE
+    #if board.is_checkmate():
+    #    return -MATE_SCORE
 
     if board.is_fivefold_repetition() or board.is_stalemate():
-        return -MATE_SCORE
+        return 0
 
     #if ENDGAME_BOOK and get_num_pieces(board) <= 5:
     #    return eval_endgame(board)
@@ -421,7 +421,7 @@ def evaluate(board):
     #score = (material_score * material_weight) + (psqt_score * psqt_weight) + (mobility_score * mobility_weight)
     score = (material_score * material_weight) + psqt_score
 
-    score = round(score / 1000, 4)
+    #score = round(score / 1000, 4)
 
     score += 0.4*king_safety(board) if get_num_pieces(board) < 6 else 0
     score += 0.1 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
