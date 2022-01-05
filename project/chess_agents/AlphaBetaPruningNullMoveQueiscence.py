@@ -88,13 +88,13 @@ def negamax(board, depth, alpha, beta, max_time):
                 return (tt_move, tt_lowerbound, canceled)
 
     if depth <= 0 or board.is_game_over():
-        score = QuiescenceSearch(board, alpha, beta, 3)
+        score = QuiescenceSearch(board, alpha, beta)
         ttable[key] = (depth, None, score, score)
         return (None, score, canceled)
     else:
         if do_null_move(board):
             board.push(chess.Move.null())
-            null_move_depth_reduction = 1
+            null_move_depth_reduction = 2
             score = -negamax(board, depth - null_move_depth_reduction - 1, -beta, -beta + 1,max_time-(time.time() - start_time))[1]
             board.pop()
             if score >= beta:
@@ -199,7 +199,7 @@ def negacstar(board, depth, mini, maxi, max_time):
     return (move, score, canceled)
 
 
-def QuiescenceSearch(board, alpha, beta, depth):
+def QuiescenceSearch(board, alpha, beta):
     global start_time
     global max_time
     #key = chess.polyglot.zobrist_hash(board)
@@ -223,7 +223,7 @@ def QuiescenceSearch(board, alpha, beta, depth):
     if(alpha < bestValue):
         alpha = bestValue
 
-    if (alpha >= beta or depth == 0 or board.is_game_over()):
+    if (alpha >= beta or board.is_game_over()):
         return bestValue
 
     best_move = None
@@ -236,10 +236,10 @@ def QuiescenceSearch(board, alpha, beta, depth):
         favorable_moves.sort(key=lambda move: rate(board, move, tt_move), reverse=True)
     for move in favorable_moves:
         board.push(move)
-        value = -1 * QuiescenceSearch(board, -beta, -alpha, depth - 1)
+        value = -1 * QuiescenceSearch(board, -beta, -alpha)
         #
         key = chess.polyglot.zobrist_hash(board)
-        #ttable[key] = (0, None, value, value)
+        ttable[key] = (0, None, value, value)
         board.pop()
 
        # if value > bestValue:
