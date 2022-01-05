@@ -421,11 +421,11 @@ def evaluate(board):
     score = (material_score * material_weight) + (psqt_score * psqt_weight) + (mobility_score * mobility_weight)
     #score = (material_score * material_weight) + psqt_score
 
-    #score = round(score / 1000, 4)
+    score = round(score / 1000, 4)
 
-    #score += 40*king_safety(board) if get_num_pieces(board) < 6 else 0
-    #score += 10 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
-    #score += 10 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
+    score += 40*king_safety(board) if get_num_pieces(board) < 6 else 0
+    score += 10 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
+    score += 10 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
 
     return score
 
