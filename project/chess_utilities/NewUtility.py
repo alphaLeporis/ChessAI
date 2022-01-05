@@ -319,10 +319,10 @@ def material_eval(board):
     Values from Tomasz Michniewski's Simplified Evaluation Function
     """
     pawn_value = 100
-    knight_value = 320
-    bishop_value = 330
-    rook_value = 500
-    queen_value = 900
+    knight_value = 305
+    bishop_value = 333
+    rook_value = 553
+    queen_value = 950
     king_value = MATE_SCORE
 
     material_score = 0
@@ -416,16 +416,16 @@ def evaluate(board):
 
     material_score = material_eval(board)
     psqt_score = psqt_eval(board)
-    #mobility_score = mobility_eval(board)
+    mobility_score = mobility_eval(board)
 
-    #score = (material_score * material_weight) + (psqt_score * psqt_weight) + (mobility_score * mobility_weight)
-    score = (material_score * material_weight) + psqt_score
+    score = (material_score * material_weight) + (psqt_score * psqt_weight) + (mobility_score * mobility_weight)
+    #score = (material_score * material_weight) + psqt_score
 
     #score = round(score / 1000, 4)
 
-    score += 0.4*king_safety(board) if get_num_pieces(board) < 6 else 0
-    score += 0.1 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
-    score += 0.1 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
+    #score += 40*king_safety(board) if get_num_pieces(board) < 6 else 0
+    #score += 10 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
+    #score += 10 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
 
     return score
 
