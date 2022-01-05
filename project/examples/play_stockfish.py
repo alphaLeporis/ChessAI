@@ -2,11 +2,14 @@
 import os
 
 from project.chess_agents.AlphaBetaPruningNullMoveQueiscence import AlphaBetaPruningNullMoveQueiscence
+from project.chess_agents.combined_agent import CombinedAgent
 from project.chess_utilities.NewUtility import NewUtility
 import chess
 import chess.engine
 import chess.pgn
 from dotenv import load_dotenv
+
+from project.chess_utilities.simple_utility import SimpleUtility
 
 """ An agent plays a game against the stockfish engine """
 def play_stockfish():
@@ -16,7 +19,7 @@ def play_stockfish():
     # Setup
     board = chess.Board()
     # Define agent here
-    white_player = AlphaBetaPruningNullMoveQueiscence(NewUtility(), 15.0)
+    white_player = CombinedAgent(SimpleUtility(), 15.0)
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:

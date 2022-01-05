@@ -15,7 +15,7 @@ ttable = {}
 class AlphaBetaPruningNullMoveQueiscence(Agent):
 
     def __init__(self, utility: Utility, time_limit_move: float) -> None:
-        super().__init__(utility, time_limit_move)
+        super().__init__(utility, time_limit_move-0.1)
         self.name = "Best Agent Ever"
         self.author = "Alexander, Louis, Niels"
 
@@ -63,7 +63,7 @@ class AlphaBetaPruningNullMoveQueiscence(Agent):
             move, guess, canceled  = MTDf(board, depth, guess, self.time_limit_move-(time.time()-start_time))
             if not canceled:
                 best_move = move
-            depth += 1
+                depth += 1
         print("Hoe diep zitten we: " + str(depth))
         if not best_move:
             best_move = list(board.legal_moves)[0]
