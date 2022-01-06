@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import os
 
-from project.chess_utilities.example_utility import ExampleUtility
-from project.chess_agents.example_agent import ExampleAgent
+from project.chess_utilities.complete_utility import CompleteUtility
+from project.chess_agents.negamax_queiscence_agent import NegaMaxQueiscence
 import chess
 import chess.engine
 import chess.pgn
@@ -16,7 +16,7 @@ def play_stockfish():
     # Setup
     board = chess.Board()
     # Define agent here
-    white_player = ExampleAgent(ExampleUtility(), 5.0)
+    white_player = NegaMaxQueiscence(CompleteUtility(), 15.0)
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:
