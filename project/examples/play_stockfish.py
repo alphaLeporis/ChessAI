@@ -33,11 +33,17 @@ def play_stockfish():
         if turn_white_player:
             # White plays a random move
             move = white_player.calculate_move(board)
+            if move == None:
+                print("Catch")
+                move = white_player.calculate_move(board)
+
             turn_white_player = False
             print("White plays")
         else:
             # Stockfish plays a move
             move = black_player.play(board, limit).move
+            if move == None:
+                print("Catch")
             turn_white_player = True
             print("Black plays")
 
