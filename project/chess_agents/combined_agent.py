@@ -89,24 +89,21 @@ class CombinedAgent(Agent):
             self.best_moves = []
 
             # Iterative deepening
-            time_start = time.time()
+            start_time = time.time()
             for depth in range(1, self.max_search_depth + 1):
 
-                move, evaluation = self.negamax(board, depth, -math.inf, math.inf, start_color, False)
+                move, evaluation = self.negamax(board, depth, -math.inf, math.inf, start_color, self.time_limit_move-(time.time()-start_time))
                 self.best_moves.append([move, evaluation])
-
-                time_end = time.time()
-                self.timer = time_end - time_start
 
                 nodes[depth] = self.counter - sum(nodes.values())
                 print('Depth: ', depth)
                 #  print('Nodes searched: ', nodes[depth])
-                print('Time spent: ', round(self.timer, 2), 's\n')
+                print('Time spent: ', round(time.time()-start_time, 2), 's\n')
 
                 self.counter = -1
 
                 # Break if time has run out, if reached at least min depth, or if finding a mate in lowest number of moves
-                if (self.timer > self.time_limit_move and depth >= self.min_search_depth) or (evaluation / 100) > 100:
+                if (time.time()-start_time > self.time_limit_move and depth >= self.min_search_depth) or (evaluation / 100) > 100:
                     break
             print('----------------------------------')
 
@@ -127,8 +124,10 @@ class CombinedAgent(Agent):
 #                            Negamax function
 #  --------------------------------------------------------------------------------
 
-    def negamax(self, board: chess.Board, depth, alpha, beta, color, allow_nullmove):
+    def negamax(self, board: chess.Board, depth, alpha, beta, color, max_time):
+        global best_move
         alpha_original = alpha
+        start_time = time.time()
 
         #  self.counter += 1
 
@@ -172,10 +171,12 @@ class CombinedAgent(Agent):
         # Negamax loop
         max_eval = -math.inf
         for child in reversed(children):
+            if (time.time() - start_time > max_time):
+                break
 
             board.push(child)
 
-            score = -self.negamax(board, depth - 1, -beta, -alpha, -color, True)[1]
+            score = -self.negamax(board, depth - 1, -beta, -alpha, -color, max_time-(time.time()-start_time))[1]
             board.pop()
 
             if score > max_eval:
