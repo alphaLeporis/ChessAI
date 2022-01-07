@@ -20,7 +20,7 @@ class CompleteUtility(Utility):
         #    return eval_endgame(board)
 
         material_weight = 10
-        psqt_weight = 1
+        psqt_weight = 5
         mobility_weight = 3
 
         material_score = self.material_eval(board)
@@ -88,7 +88,7 @@ class CompleteUtility(Utility):
             psqt_mg_score = mg_table[7 - int(pos / 8)][pos % 8]
             psqt_eg_score = eg_table[7 - int(pos / 8)][pos % 8]
             psqt_score += (((psqt_mg_score * (256 - phase)) + (psqt_eg_score * phase)) / 256) * value
-            # psqt_score += piece_val[piece.symbol()]*10 if board.turn else piece_val[piece.symbol()]*-10
+            psqt_score += pa.piece_val[piece.symbol()]*10 if board.turn else pa.piece_val[piece.symbol()]*-10
 
         return psqt_score
 
