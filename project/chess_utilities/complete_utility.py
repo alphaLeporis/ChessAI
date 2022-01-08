@@ -20,7 +20,7 @@ class CompleteUtility(Utility):
         #    return eval_endgame(board)
 
         material_weight = 10
-        psqt_weight = 5
+        psqt_weight = 10
         mobility_weight = 3
 
         material_score = self.material_eval(board)
