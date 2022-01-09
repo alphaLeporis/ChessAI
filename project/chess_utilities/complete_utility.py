@@ -10,7 +10,7 @@ class CompleteUtility(Utility):
 
     def board_value(self, board: chess.Board):
         """
-        Calculates the full evaluation of th board using weights.
+        Calculates the full evaluation of the board using weights and evaluations.
 
         :param board: the state of the board right now.
         :return: a score.
@@ -33,9 +33,10 @@ class CompleteUtility(Utility):
 
         score = round(score / 1000, 4)
 
-        score += 0.4 * self.king_safety(board) if self.get_num_pieces(board) < 12 else 0
+        score += 0.4 * self.king_safety(board) if self.get_num_pieces(board) < 6 else 0
         score += 0.2 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
         score += 0.2 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
+        score += 0.4 if len(board.pieces(chess.QUEEN, board.turn)) > 0 else 0
         score += 0.4 if len(board.pieces(chess.QUEEN, not board.turn)) == 0 else 0
         return score
 

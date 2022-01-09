@@ -19,14 +19,20 @@ ttable = {}
 class NegaMaxQueiscence(Agent):
 
     def __init__(self, utility: Utility, time_limit_move: float) -> None:
-        super().__init__(utility, time_limit_move-0.1)
+        super().__init__(utility, time_limit_move - 0.1)
         self.name = "NegaMax - Queiscence - MTDf - Opening - Closing"
         self.author = "Alexander, Louis, Niels"
 
         self.is_in_opening = True
 
-
     def calculate_move(self, board: chess.Board):
+        """
+        The main move calculator, here we first check if we have an opening move else we use iterative deepening.
+        In case of an endgame we will be evaluating the endgame.
+
+        :param board: the state of the board right now.
+        :return: the best move.
+        """
         move = None
         start_time = time.time()
 
@@ -111,14 +117,16 @@ class NegaMaxQueiscence(Agent):
     def negamax(self, board, depth, alpha, beta, max_time):
         """
         The great negamax algorithm and the transposition tables.
-        Instead of using 2 different parts of code like minimax, this is an adapted version for 2 player games (like chess).
+        Instead of using 2 different parts of code like minimax, this is an adapted version
+            for 2 player games (like chess).
 
         :param board: the state of the board right now.
         :param depth: the depth we are doing right now.
         :param alpha: the input alpha value.
         :param beta: the input beta value.
         :param max_time: the maximum time we can stay in here.
-        :return: the best move at the current depth possible, the score of that move and a boolean telling us if this depth is
+        :return: the best move at the current depth possible, the score of that move and
+            a boolean telling us if this depth is
             has been cancelled mid-computation.
         """
         start_time = time.time()
@@ -169,9 +177,13 @@ class NegaMaxQueiscence(Agent):
                 full_depth_moves_threshold = 4
                 reduction_threshold = 4
                 late_move_depth_reduction = 1
-                if moves_searched >= full_depth_moves_threshold and failed_high == False and depth >= reduction_threshold and self.reduction_ok(
-                        board, move):
-                    score = -self.negamax(board, depth - 1 - late_move_depth_reduction, -beta, -alpha,
+                if moves_searched >= full_depth_moves_threshold \
+                        and failed_high == False \
+                        and depth >= reduction_threshold \
+                        and self.reduction_ok(board, move):
+                    score = -self.negamax(board,
+                                          depth - 1 - late_move_depth_reduction,
+                                          -beta, -alpha,
                                           max_time - (time.time() - start_time))[1]
                 else:
                     score = -self.negamax(board, depth - 1, -beta, -alpha, max_time - (time.time() - start_time))[1]
@@ -213,11 +225,11 @@ class NegaMaxQueiscence(Agent):
         # Search for position in the transposition table
         key = chess.polyglot.zobrist_hash(board)
         if key in ttable:
-           tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
-           if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
-               return tt_upperbound
-           if tt_lowerbound >= beta:
-               return tt_lowerbound
+            tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
+            if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
+                return tt_upperbound
+            if tt_lowerbound >= beta:
+                return tt_lowerbound
 
         bestValue = self.utility.board_value(board)
         if bestValue >= beta:
@@ -227,7 +239,6 @@ class NegaMaxQueiscence(Agent):
 
         if (alpha >= beta or board.is_game_over()):
             return bestValue
-
 
         favorable_moves = []
         for move in list(board.legal_moves):

@@ -1,4 +1,7 @@
 import chess as chess
+# All the parameters used inside the game.
+# These should not be changed (apart from the opening/endgame book options).
+
 
 # !!!!!!
 OPENING_BOOK = True # Use opening book?

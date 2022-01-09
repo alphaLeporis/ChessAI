@@ -32,8 +32,6 @@ def make_opening_move(board):
     else:
         return None
 
-    # Convert the move to the right format
-
     # Wait for some time just so simulate the AI "thinking" during openings
     time.sleep(random.uniform(0.5, 1.5))
 

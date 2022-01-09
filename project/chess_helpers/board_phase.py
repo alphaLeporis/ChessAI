@@ -6,6 +6,9 @@ def get_phase(board):
     Gets the game state of the board as a number
     Low numbers indicate early game
     High numbers indiciate endgame
+
+    :param board: the state of the board right now.
+    :return: the phase in an number
     """
     if board.is_checkmate():
         return -pa.MATE_SCORE
