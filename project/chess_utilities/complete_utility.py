@@ -22,7 +22,7 @@ class CompleteUtility(Utility):
             return 0
 
         material_weight = 10
-        psqt_weight = 15
+        psqt_weight = 7
         mobility_weight = 5
 
         material_score = self.material_eval(board)
