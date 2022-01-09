@@ -52,15 +52,24 @@ class NegaMaxQueiscence(Agent):
         return move
 
     def iterative_deepening(self, board):
+        """
+        Based on the remaining time we can search deeper. The remeining time is checked each time and furthur code
+        will cacncel if there is no remaining time left.
+        :param board: the state of the board right now.
+        :return: the best move at the deepest depth possible and the score of that move.
+        """
         best_move = None
+        best_guess = - pa.INF
         guess = 0
         start_time = time.time()
-        depth = 1
+        depth = 2
         while (time.time() < start_time + self.time_limit_move):
             move, guess, canceled = self.MTDf(board, depth, guess, self.time_limit_move - (time.time() - start_time))
             if not canceled:
-                best_move = move
+                if guess > best_guess:
+                    best_move = move
             depth += 1
+            guess = 0
         print("Hoe diep zitten we: " + str(depth))
         if not best_move:
             best_move = list(board.legal_moves)[0]
@@ -70,6 +79,11 @@ class NegaMaxQueiscence(Agent):
         """
         Searches the possible moves using negamax by zooming in on the window
         Psuedocode from Aske Plaat, Jonathan Schaeffer, Wim Pijls, and Arie de Bruin
+        :param board: the state of the board right now.
+        :param depth: the depth we are doing right now.
+        :param guess: the begin guess we are using.
+        :param max_time: the maximum time we can stay in here.
+        :return: the best move at the current depth possible and the score of that move.
         """
         upperbound = pa.MATE_SCORE
         lowerbound = -pa.MATE_SCORE
@@ -95,6 +109,18 @@ class NegaMaxQueiscence(Agent):
         return (move, guess, canceled)
 
     def negamax(self, board, depth, alpha, beta, max_time):
+        """
+        The great negamax algorithm and the transposition tables.
+        Instead of using 2 different parts of code like minimax, this is an adapted version for 2 player games (like chess).
+
+        :param board: the state of the board right now.
+        :param depth: the depth we are doing right now.
+        :param alpha: the input alpha value.
+        :param beta: the input beta value.
+        :param max_time: the maximum time we can stay in here.
+        :return: the best move at the current depth possible, the score of that move and a boolean telling us if this depth is
+            has been cancelled mid-computation.
+        """
         start_time = time.time()
         key = chess.polyglot.zobrist_hash(board)
         tt_move = None
@@ -157,9 +183,6 @@ class NegaMaxQueiscence(Agent):
                     best_move = move
                     best_score = score
 
-                # if (time.time() - start_time > max_time):
-                #    return (best_move, best_score)
-
                 alpha = max(alpha, best_score)
 
                 if best_score >= beta:  # Beta cut-off (fails high)
@@ -188,13 +211,13 @@ class NegaMaxQueiscence(Agent):
         tt_score = None
 
         # Search for position in the transposition table
-        # if key in ttable:
-        #    tt_depth, tt_move, tt_lowerbound, tt_upperbound, tt_score = ttable[key]
-        #    if tt_depth >= depth+4:
-        #        if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
-        #            return tt_upperbound
-        #        if tt_lowerbound >= beta:
-        #            return tt_lowerbound
+        key = chess.polyglot.zobrist_hash(board)
+        if key in ttable:
+           tt_depth, tt_move, tt_lowerbound, tt_upperbound = ttable[key]
+           if tt_upperbound <= alpha or tt_lowerbound == tt_upperbound:
+               return tt_upperbound
+           if tt_lowerbound >= beta:
+               return tt_lowerbound
 
         bestValue = self.utility.board_value(board)
         if bestValue >= beta:
@@ -205,7 +228,6 @@ class NegaMaxQueiscence(Agent):
         if (alpha >= beta or board.is_game_over()):
             return bestValue
 
-        best_move = None
 
         favorable_moves = []
         for move in list(board.legal_moves):
@@ -221,19 +243,20 @@ class NegaMaxQueiscence(Agent):
             ttable[key] = (0, None, value, value)
             board.pop()
 
-            # if value > bestValue:
-            #     bestValue = value
-
             if value >= beta:
                 return beta
-
-            # bestValue = max(bestValue, value)
 
             alpha = max(alpha, value)
 
         return alpha
 
     def is_favorable_move(self, board: chess.Board, move: chess.Move) -> bool:
+        """
+        Returns a boolean based on the fact if this move captures something.
+        :param board: the state of the board right now.
+        :param move: the move in question.
+        :return: a boolean if it is a favorable move.
+        """
         if move.promotion is not None:
             return True
         if board.is_capture(move) and not board.is_en_passant(move):

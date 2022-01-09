@@ -8,34 +8,35 @@ class CompleteUtility(Utility):
     def __init__(self) -> None:
         pass
 
-    # Calculate the amount of white pieces minus the amount of black pieces
     def board_value(self, board: chess.Board):
+        """
+        Calculates the full evaluation of th board using weights.
+
+        :param board: the state of the board right now.
+        :return: a score.
+        """
         if board.is_checkmate():
             return -pa.MATE_SCORE
 
         if board.is_fivefold_repetition() or board.is_stalemate():
             return 0
 
-        # if ENDGAME_BOOK and get_num_pieces(board) <= 5:
-        #    return eval_endgame(board)
-
         material_weight = 10
-        psqt_weight = 10
-        mobility_weight = 3
+        psqt_weight = 15
+        mobility_weight = 5
 
         material_score = self.material_eval(board)
         psqt_score = self.psqt_eval(board)
         mobility_score = self.mobility_eval(board)
 
         score = (material_score * material_weight) + (psqt_score * psqt_weight) + (mobility_score * mobility_weight)
-        #score = (material_score * material_weight) + psqt_score
 
         score = round(score / 1000, 4)
 
-        score += 0.4 * self.king_safety(board) if self.get_num_pieces(board) < 6 else 0
-        score += 0.1 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
-        score += 0.1 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
-
+        score += 0.4 * self.king_safety(board) if self.get_num_pieces(board) < 12 else 0
+        score += 0.2 if len(board.pieces(chess.BISHOP, board.turn)) == 2 else 0
+        score += 0.2 if len(board.pieces(chess.KNIGHT, board.turn)) == 2 else 0
+        score += 0.4 if len(board.pieces(chess.QUEEN, not board.turn)) == 0 else 0
         return score
 
     def material_eval(self, board):
@@ -43,6 +44,9 @@ class CompleteUtility(Utility):
         Evaluate material advantage by finding the difference in
         material between white and black
         Values from Tomasz Michniewski's Simplified Evaluation Function
+
+        :param board: the state of the board right now.
+        :return: sum of all pieces
         """
         pawn_value = 100
         knight_value = 320
@@ -73,6 +77,9 @@ class CompleteUtility(Utility):
         Piece-squares tables with tapered evaluation
         Values from Ronald Friederich's Rofchade engine
         Tapered evaluation from Fruit engine
+
+        :param board: the state of the board right now.
+        :return: the psqt sum
         """
         phase = bp.get_phase(board)
         psqt_score = 0
@@ -97,6 +104,9 @@ class CompleteUtility(Utility):
         """
         Evaluate mobility by getting the difference between the number of
         legal moves white has minus the number of legal moves black has
+
+        :param board: the state of the board right now.
+        :return: your color - other color.
         """
         moves = list(board.legal_moves)
         mobility_score = 0
@@ -111,6 +121,9 @@ class CompleteUtility(Utility):
     def get_num_pieces(self, board):
         """
         Get the number of pieces of all types and color on the board.
+
+        :param board: the state of the board right now.
+        :return: returns this number.
         """
         num = 0
         for color in chess.COLORS:
@@ -118,7 +131,13 @@ class CompleteUtility(Utility):
                 num += (len(board.pieces(piece, color)))
         return num
 
-    def king_safety(self,board):
+    def king_safety(self, board):
+        """
+        Computes the kings' safety based on pieces next to both kings.
+
+        :param board: the state of the board right now.
+        :return: value of safety
+        """
         safety = 0
         King = board.king(board.turn)
         king = board.king(not board.turn)
@@ -131,6 +150,12 @@ class CompleteUtility(Utility):
         return safety
 
     def next_to_king(self, king):
+        """
+        Using a mailbox it can compute the pieces next to the king.
+
+        :param king: the state of the board right now.
+        :return: an array of all pieces next to the king
+        """
         vector = [-11, -10, -9, -1, 0, 1, 9, 10, 11]
         next_to = []
         for dep in vector:

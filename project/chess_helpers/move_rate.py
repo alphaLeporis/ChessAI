@@ -16,7 +16,11 @@ def rate(board, move, tt_move):
     - Rook: 4
     - Queen: 5
     - King: 6
-    Values are arbitrary, and only useful when comparing whether
+
+    :param board: the state of the board right now.
+    :param move: the move in question.
+    :param tt_move: if the move is from the TT table.
+    :return: arbitrary value, and only useful when comparing whether
     one is higher or lower than the other
     """
     if tt_move:

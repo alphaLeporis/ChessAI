@@ -5,6 +5,11 @@ import chess.syzygy
 
 
 def find_endgame_move(board):
+    """
+    If it is endgmae: it will return a move from the endgame syzygy table.
+    :param board: the state of the board right now.
+    :return: a move.
+    """
     dirname = os.path.dirname(__file__)
     tablebase_directory = os.path.join(dirname, '../data/syzygy')
     # Get fen and Python-Chess board from the given gamestate

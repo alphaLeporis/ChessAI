@@ -16,7 +16,7 @@ def play_stockfish():
     # Setup
     board = chess.Board()
     # Define agent here
-    white_player = NegaMaxQueiscence(CompleteUtility(), 15.0)
+    white_player = NegaMaxQueiscence(CompleteUtility(), 5.0)
     # Enter your path here:
     black_player = chess.engine.SimpleEngine.popen_uci(os.environ.get("STOCKFISH_PATH"))
     # Determine the skill level of Stockfish:

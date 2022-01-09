@@ -6,7 +6,11 @@ import time
 
 
 def make_opening_move(board):
-
+    """
+    Returns a opening move inside opening books.
+    :param board: the state of the board right now.
+    :return: a move.
+    """
     moves = []
     dirname = os.path.dirname(__file__)
     opening_directory = os.path.join(dirname, '../data/opening_book')
